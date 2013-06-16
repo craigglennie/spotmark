@@ -3,3 +3,4 @@ requests
 pyzmq
 tornado
 nose
+moto

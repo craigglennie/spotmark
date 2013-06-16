@@ -17,10 +17,9 @@ class SQSAccumulator(object):
     success_count, failure_count = 0, 0
     last_sqs_time = None
 
-    def __init__(self, queue_name=manager.SQS_QUEUE_NAME, update_interval_secs=10):
+    def __init__(self, queue_name=manager.SQS_QUEUE_NAME):
         sqs = boto.connect_sqs()
         self.queue = sqs.get_queue(queue_name)
-        self.update_interval_secs = update_interval_secs        
 
     def enqueue(self, message):
         _message = {
@@ -31,13 +30,7 @@ class SQSAccumulator(object):
         self.queue.write(sqs_message)
 
     def enqueue_update(self):
-        timestamp = lambda: int(time.time())
-
-        if not self.last_sqs_time:
-            self.last_sqs_time = timestamp()
-            return
-
-        now = timestamp()
+        now = int(time.time())
 
         self.enqueue({
             "success_count": self.success_count,
@@ -53,15 +46,3 @@ class SQSAccumulator(object):
         self.success_count += sum(msg.get("success_count", 0) for msg in messages)
         self.failure_count += sum(msg.get("failure_count", 0) for msg in messages)
 
-def start():
-
-    accumulator = SQSAccumulator()
-    streamer = messaging.ZMQPeriodicStreamer(
-        accumulator.process_messages, accumulator.enqueue_update, 10000
-    )
-
-    accumulator.enqueue({"status": "running"})
-    streamer.begin_streaming()
-
-if __name__ == '__main__':
-    start()
