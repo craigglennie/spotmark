@@ -14,7 +14,7 @@ class SQSAccumulator(object):
     """Accumulates success and fail counts and periodically
     enqeues an update to SQS"""
 
-    success_count, fail_count = 0, 0
+    success_count, failure_count = 0, 0
     last_sqs_time = None
 
     def __init__(self, queue_name=manager.SQS_QUEUE_NAME, update_interval_secs=10):
@@ -41,18 +41,17 @@ class SQSAccumulator(object):
 
         self.enqueue({
             "success_count": self.success_count,
-            "fail_count": self.fail_count,
+            "failure_count": self.failure_count,
             "interval_start": self.last_sqs_time,
             "interval_end": now
         })
-        self.success_count, self.fail_count = 0, 0
+        self.success_count, self.failure_count = 0, 0
         self.last_sqs_time = now
 
     def process_messages(self, messages):
-    
         messages = [json.loads(msg) for msg in messages]
         self.success_count += sum(msg.get("success_count", 0) for msg in messages)
-        self.fail_count += sum(msg.get("fail_count", 0) for msg in messages)
+        self.failure_count += sum(msg.get("failure_count", 0) for msg in messages)
 
 def start():
 
