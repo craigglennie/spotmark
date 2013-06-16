@@ -3,7 +3,7 @@ import boto
 
 # Ubuntu 13.04 64-bit instance-store
 DEFAULT_AMI = 'ami-5dd0ba34'
-BOOTSTRAP_TEMPLATE = "bootstrap_template.sh"
+BOOTSTRAP_TEMPLATE = "startup_template.sh"
 SQS_QUEUE_NAME = "spotmark"
 
 def get_most_recent_spot_price(instance_type, environment="Linux/UNIX"):
