@@ -1,10 +1,10 @@
 import accumulator
-import messaging
+import ipc
 
 def start():
 
     sqs_accumulator = accumulator.SQSAccumulator()
-    streamer = messaging.ZMQPeriodicStreamer(
+    streamer = ipc.ZMQPeriodicStreamer(
         sqs_accumulator.process_messages, 
         sqs_accumulator.enqueue_update,
          10000

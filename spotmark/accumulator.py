@@ -8,8 +8,6 @@ import manager
 from metadata import INSTANCE_ID
 import messaging
 
-LOG_FILE = 'accumulator.log'
-
 class SQSAccumulator(object):
     """Accumulates success and fail counts and periodically
     enqeues an update to SQS"""
