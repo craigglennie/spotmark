@@ -1,13 +1,11 @@
 import zmq
 from zmq.eventloop import ioloop, zmqstream
 
-DEFAULT_ZMQ_URI = "tcp://0.0.0.0:10000" 
-
 class ZMQReceiver(object):
     """Reads messages from a ZeroMQ message stream. Uses
     tornado's event loop rather than repeatedly polling"""
 
-    def __init__(self, msg_callback, zmq_uri=DEFAULT_ZMQ_URI):
+    def __init__(self, msg_callback, zmq_uri):
         context = zmq.Context()
         self.pull_socket = context.socket(zmq.PULL)
         self.pull_socket.bind(zmq_uri)
@@ -24,28 +22,30 @@ class ZMQReceiver(object):
         self.setup_ioloop()
         self.io_loop.start()
 
+
 class ZMQPeriodicReceiver(ZMQReceiver):
     """Like ZMQReceiver but with two callbacks - msg_callback
     receives messages from ZMQ, while periodic_callback is called 
     at a user-specified interval"""
     
-    def __init__(self, msg_callback, periodic_callback, periodic_callback_interval_ms, **kwargs):
-        super(ZMQPeriodicReceiver, self).__init__(msg_callback, **kwargs)
+    def __init__(self, msg_callback, periodic_callback, 
+                periodic_callback_interval_ms, zmq_uri):
+        super(ZMQPeriodicReceiver, self).__init__(msg_callback, zmq_uri)
         self.periodic_callback_interval_ms = periodic_callback_interval_ms 
         self.periodic_callback = periodic_callback
 
     def setup_ioloop(self):
-        print "SETUP ioloop"
         super(ZMQPeriodicReceiver, self).setup_ioloop()
         periodic = ioloop.PeriodicCallback(
             self.periodic_callback, self.periodic_callback_interval_ms, io_loop=self.io_loop
         )
         periodic.start()
 
+
 class ZMQEmitter(object):
     """Class that knows how to send messages to a ZMQReceiver""" 
 
-    def __init__(self, zmq_uri=DEFAULT_ZMQ_URI):
+    def __init__(self, zmq_uri):
         context = zmq.Context()
 
         self.push_socket = context.socket(zmq.PUSH)

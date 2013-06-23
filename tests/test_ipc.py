@@ -3,7 +3,7 @@ import subprocess
 import unittest
 import time
 
-from spotmark import ipc
+from spotmark import ipc, constants
 
 class EmitterProcess(multiprocessing.Process):
     
@@ -18,7 +18,7 @@ class EmitterProcess(multiprocessing.Process):
         # Instantiaing the emitter in the constructor causes problems
         # because you can't create a context, then fork, and then use
         # the context - ZMQ will die
-        zmq_emitter = ipc.ZMQEmitter()
+        zmq_emitter = ipc.ZMQEmitter(constants.ZMQ_URI)
         sent = 0
         while 1: 
             zmq_emitter.send_string(str(self.id))
@@ -37,7 +37,7 @@ class ReceiverProcess(multiprocessing.Process):
         queue.put(messages)
 
     def run(self):
-        receiver = ipc.ZMQReceiver(self.messages_received)
+        receiver = ipc.ZMQReceiver(self.messages_received, constants.ZMQ_URI)
         receiver.begin_receiving()        
 
 
@@ -109,7 +109,8 @@ class PeriodicReceiverProcess(multiprocessing.Process):
         receiver = ipc.ZMQPeriodicReceiver(
             self.msg_callback,
             self.periodic_callback,
-            self.callback_interval_secs * 1000
+            self.callback_interval_secs * 1000,
+            constants.ZMQ_URI,
         )
         receiver.begin_receiving()        
 

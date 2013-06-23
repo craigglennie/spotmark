@@ -13,3 +13,5 @@ def get_metadata(data_name, default):
 
 INSTANCE_ID = get_metadata("http://169.254.169.254/latest/meta-data/instance-id", "testing")
 
+SQS_QUEUE_NAME = os.environ.get("SPOTMARK_SQS_QUEUE_NAME", "spotmark")
+ZMQ_URI = os.environ.get("SPOTMARK_ZMQ_URI", "tcp://0.0.0.0:10000")

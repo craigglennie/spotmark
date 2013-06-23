@@ -4,20 +4,18 @@ import time
 
 import boto
 
-import manager
-from metadata import INSTANCE_ID
+from constants import INSTANCE_ID, SQS_QUEUE_NAME
 import messaging
 
 class SQSAccumulator(object):
     """Accumulates success and fail counts and periodically
     enqeues an update to SQS"""
 
-    success_count, failure_count = 0, 0
-    last_sqs_time = None
-
-    def __init__(self, queue_name=manager.SQS_QUEUE_NAME):
+    def __init__(self, queue_name=SQS_QUEUE_NAME):
         sqs = boto.connect_sqs()
         self.queue = sqs.get_queue(queue_name)
+        self.success_count, self.failure_count = 0, 0
+        self.last_sqs_time = None
 
     def enqueue(self, message):
         _message = {

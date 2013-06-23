@@ -1,18 +1,29 @@
 import accumulator
 import ipc
 
-def start():
+class Client(object):
+    """Implements client functionality for Spotmark
 
-    sqs_accumulator = accumulator.SQSAccumulator()
-    streamer = ipc.ZMQPeriodicStreamer(
-        sqs_accumulator.process_messages, 
-        sqs_accumulator.enqueue_update,
-         10000
-    )
+    Listens to ZMQ event stream and periodically pushes
+    aggregates totals to SQS"""
 
-    sqs_accumulator.enqueue({"status": "running"})
-    streamer.begin_streaming()
+    def __init__(self, sqs_update_frequency_secs):
+        self.sqs_update_frequency_secs = sqs_update_frequency_secs
+
+    def start():
+
+        sqs_accumulator = accumulator.SQSAccumulator()
+        streamer = ipc.ZMQPeriodicStreamer(
+            sqs_accumulator.process_messages, 
+            sqs_accumulator.enqueue_update,
+            self.sqs_update_frequency_secs * 1000           
+        )
+
+        sqs_accumulator.enqueue({"status": "running"})
+        streamer.begin_streaming()
 
 if __name__ == '__main__':
-    start()
+    client = Client(10)
+    client.start()
+
 

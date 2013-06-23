@@ -4,7 +4,6 @@ import boto
 # Ubuntu 13.04 64-bit instance-store
 DEFAULT_AMI = 'ami-5dd0ba34'
 BOOTSTRAP_TEMPLATE = "startup_template.sh"
-SQS_QUEUE_NAME = "spotmark"
 
 def get_most_recent_spot_price(instance_type, environment="Linux/UNIX"):
     start_time = datetime.utcnow() - timedelta(seconds=3600)
@@ -15,7 +14,7 @@ def get_most_recent_spot_price(instance_type, environment="Linux/UNIX"):
     )
     return prices[0].price
 
-def get_user_data(access_key_id, secret_access_key, sqs_queue_name, git_repo_uri, get_repo_branch, environment_variables=None, user_script=None):
+def get_user_data(access_key_id, secret_access_key, git_repo_uri, get_repo_branch, environment_variables=None, user_script=None):
     """Returns the user data shell script used to bootstrap an instance.
     access_key_id, security_group, sqs_queue_name: Exported as environment variables for boto
     git_repo_uri: URI to a Git repo containing code to be downloaded and run by the machine.
@@ -57,8 +56,8 @@ class ScriptedInstanceLauncher(object):
         self.instance_type = instance_type
         self.security_group = security_group
         self.key_name = key_name
+        self.user_data = user_data
         self.ami = ami or DEFAULT_AMI
-        self.user_data = user_data or DEFAULT_USER_DATA_FILE
         
         [region] = [i for i in boto.ec2.regions() if i.name == region_name]
         self.region = region
@@ -76,18 +75,19 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
         requests = self.get_spot_requests()
         return [i.instance_id for i in requests if i.state == 'active']
 
+    @property
+    def bid_price(self):
+        return get_most_recent_spot_price(self.instance_type)
+    
     def get_request_statuses(self):
         return [(request.state, request.instance_id) for request in self.get_spot_requests()]
 
     def get_spot_requests(self):
         return self.ec2.get_all_spot_instance_requests(request_ids=self.spot_request_ids)
-    
-    def get_current_bid_price(self):
-        return get_most_recent_spot_price(self.instance_type)
 
     def launch(self, num_instances, **kwargs):
         requests = self.ec2.request_spot_instances(
-            self.get_current_bid_price(),
+            self.bid_price,
             self.ami,
             count=num_instances,
             user_data=self.user_data,
