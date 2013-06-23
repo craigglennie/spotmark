@@ -17,16 +17,17 @@ class ZMQReceiver(object):
 
     def setup_ioloop(self):
         ioloop.install()
-        self.ioloop = ioloop.IOLoop.instance()
+        self.io_loop = ioloop.IOLoop.instance()
 
     def begin_receiving(self):
         """Start listening for messages"""
         self.setup_ioloop()
-        self.ioloop.start()
+        self.io_loop.start()
 
 class ZMQPeriodicReceiver(ZMQReceiver):
-    """Like ZMQReceiver except that the callback is called at
-    a user-specified interval"""
+    """Like ZMQReceiver but with two callbacks - msg_callback
+    receives messages from ZMQ, while periodic_callback is called 
+    at a user-specified interval"""
     
     def __init__(self, msg_callback, periodic_callback, periodic_callback_interval_ms, **kwargs):
         super(ZMQPeriodicReceiver, self).__init__(msg_callback, **kwargs)
@@ -34,9 +35,10 @@ class ZMQPeriodicReceiver(ZMQReceiver):
         self.periodic_callback = periodic_callback
 
     def setup_ioloop(self):
+        print "SETUP ioloop"
         super(ZMQPeriodicReceiver, self).setup_ioloop()
         periodic = ioloop.PeriodicCallback(
-            self.periodic_callback, self.periodic_callback_interval_ms, io_loop=self.ioloop
+            self.periodic_callback, self.periodic_callback_interval_ms, io_loop=self.io_loop
         )
         periodic.start()
 
