@@ -72,4 +72,8 @@ class ClusterStats(object):
     def request_count(self, min_time, max_time):
         return sum(i.request_count(min_time, max_time) for i in self.get_period(min_time, max_time))
 
-
+    def instance_count(self, min_time, max_time):
+        """Returns the number of instances that reported stats between min_time
+        and max_time"""
+        
+        return len(self.get_period(min_time, max_time))
