@@ -96,8 +96,8 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
             **kwargs
         )
         self.spot_request_ids.extend([request.id for request in requests])
-                 
-    def cancel(self, num_requests):
+
+    def terminate(self, num_requests):
         all_requests = self.get_spot_requests()
         running_requests = [i for i in all_requests if i.instance_id]
         to_cancel = running_requests[:num_requests]
