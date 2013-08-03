@@ -7,12 +7,11 @@ from spotmark import ipc, constants
 
 class EmitterProcess(multiprocessing.Process):
     
-    sleep_between_messages_secs = 0
-
     def __init__(self, id, num_messages):
         super(EmitterProcess, self).__init__()
         self.id = id
         self.num_messages = num_messages
+        self.sleep_between_messages_secs = 0
 
     def run(self):
         # Instantiaing the emitter in the constructor causes problems
@@ -48,15 +47,14 @@ class TestIPCBase(unittest.TestCase):
     receiver process. Receiver process requeues these messages for the test
     class to process."""
 
-    num_messages = 5
-    num_emitters = 5
-    messages = []
-    receiver = None
-
     def setUp(self):
         super(TestIPCBase, self).setUp()
         self.queue = multiprocessing.Queue()
+        self.num_messages = 5
+        self.messages = []
+        self.num_emitters = 5
         self.emitters = [EmitterProcess(i, self.num_messages) for i in range(self.num_emitters)]
+        self.receiver = None
 
     def tearDown(self):
         self.receiver.terminate()        
@@ -112,7 +110,7 @@ class PeriodicReceiverProcess(multiprocessing.Process):
             self.callback_interval_secs * 1000,
             constants.ZMQ_URI,
         )
-        receiver.begin_receiving()        
+        receiver.begin_receiving()
 
 class TestZMQPeriodicReceiver(TestIPCBase):
 
@@ -129,28 +127,30 @@ class TestZMQPeriodicReceiver(TestIPCBase):
         self.receiver.start()
 
         for emitter in self.emitters:
-            # Half of callback_interval_secs to ensure that all emitters
+            # One quarter of callback_interval_secs to ensure that all emitters
             # will enqueue their ID at least once per callback interval
             emitter.sleep_between_messages_secs = 1
             emitter.start()
 
+        have_validated_messages = False
+
         while 1:
             interval, messages = self.queue.get(timeout=10)
+
+            # Interval will be None at the first call as it's the first enqueue,
+            # but we do expect to see messages
+            if interval is None:
+                self.assertNotEqual(messages, [])
+            else:
+                self.assertEqual(interval, self.callback_interval_secs)
+
+            # If we haven't received messages then the emitters have stopped sending
+            # so we can exit successfully provided we have validated messages already
             if not messages:
-                if not interval:
-                    raise AssertionError("Expected some messages at first check")
+                self.assertTrue(have_validated_messages)
                 break
 
-            if interval:
-                self.assertEqual(interval, self.callback_interval_secs)
-        
             emitter_ids = map(int, messages)
             for emitter in self.emitters:
                 self.assertIn(emitter.id, emitter_ids)
-
-
-            
-
-
-
-
+            have_validated_messages = True
