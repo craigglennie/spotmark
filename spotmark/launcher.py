@@ -34,8 +34,9 @@ def get_user_data(access_key_id, secret_access_key, git_repo_uri, get_repo_branc
 class ScriptedInstanceLauncher(object):
     """Launches an EC2 instance to run a user-supplied script""" 
 
-    instance_ids = []
-    _ec2 = None    
+    def __init__(self):
+        self.instance_ids = []
+        self.ec2 = None
 
     @property
     def ec2(self):
@@ -68,7 +69,8 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
     """Extends ScriptedInstanceLauncher to starting and stopping
     Spot instances"""
 
-    spot_request_ids = []
+    def __init__(self):
+        self.spot_request_ids = []
 
     @property
     def instance_ids(self):
@@ -85,7 +87,7 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
     def get_spot_requests(self):
         return self.ec2.get_all_spot_instance_requests(request_ids=self.spot_request_ids)
 
-    def launch(self, num_instances, **kwargs):
+    def start(self, num_instances, **kwargs):
         requests = self.ec2.request_spot_instances(
             self.bid_price,
             self.ami,
@@ -97,7 +99,7 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
         )
         self.spot_request_ids.extend([request.id for request in requests])
 
-    def terminate(self, num_requests):
+    def stop(self, num_requests):
         all_requests = self.get_spot_requests()
         running_requests = [i for i in all_requests if i.instance_id]
         to_cancel = running_requests[:num_requests]

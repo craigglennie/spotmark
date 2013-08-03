@@ -10,7 +10,7 @@ class Client(object):
     def __init__(self, sqs_update_frequency_secs):
         self.sqs_update_frequency_secs = sqs_update_frequency_secs
 
-    def start():
+    def start(self):
 
         sqs_accumulator = accumulator.SQSAccumulator()
         streamer = ipc.ZMQPeriodicStreamer(

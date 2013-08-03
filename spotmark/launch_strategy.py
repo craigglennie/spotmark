@@ -23,6 +23,9 @@ class RequestsPerSecondStrategy(LaunchStrategy):
         self.required_instance_count = None
 
     def get_instance_count_delta(self):
+        """Returns the change in instance required to achieve the
+        targeted requests per second"""
+
         now = time.time()
         
         # Don't adjust number of machines because previous changes
@@ -30,7 +33,6 @@ class RequestsPerSecondStrategy(LaunchStrategy):
         instance_count = self.cluster_stats.instance_count(self.last_decision_time, now)
         if self.required_instance_count is not None and (self.required_instance_count != instance_count):
             return 0
-
         request_count = self.cluster_stats.request_count(self.last_decision_time, now)
         requests_per_instance = round(request_count / instance_count)
         self.required_instance_count = round(self.target_requests_per_second / requests_per_instance)
