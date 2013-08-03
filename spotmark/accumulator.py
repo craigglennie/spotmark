@@ -1,11 +1,9 @@
-import os
 import json
 import time
 
 import boto
 
 from constants import INSTANCE_ID, SQS_QUEUE_NAME
-import messaging
 
 class SQSAccumulator(object):
     """Accumulates success and fail counts and periodically

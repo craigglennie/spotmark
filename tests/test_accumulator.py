@@ -4,7 +4,7 @@ import unittest
 import boto
 import moto
 
-from spotmark import accumulator, metadata
+from spotmark import accumulator, constants
 
 class TestSQSAccumulator(unittest.TestCase):
 
@@ -55,7 +55,7 @@ class TestSQSAccumulator(unittest.TestCase):
 
         sqs_message = self.accumulator.queue.read()
         message = json.loads(sqs_message.get_body())
-        self.assertEquals(message["instance_id"], metadata.INSTANCE_ID)
+        self.assertEquals(message["instance_id"], constants.INSTANCE_ID)
         self.assertEquals(message["content"], data)
 
     def test_enqueue_update(self):
