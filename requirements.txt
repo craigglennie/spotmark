@@ -4,3 +4,4 @@ pyzmq
 tornado
 nose
 moto
+jinja2
