@@ -1,7 +1,3 @@
-{# This is a Jinja2 template for a shell script to be run when
-an instance starts. It sets up spotmark and AWS credentials
-required for access to SQS. User code should be injected
-by creating a child template inheriting from this. #}
 #!/bin/bash
 
 set -xe
@@ -10,6 +6,8 @@ set -xe
 # as well as to the  ec2-get-console-output command.
 # See: http://alestic.com/2010/12/ec2-user-data-output
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+apt-get update
 
 # python-dev is required for pyzmq to build
 apt-get install -y git python-pip python-virtualenv python-dev
