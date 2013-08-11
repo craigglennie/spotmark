@@ -1,10 +1,10 @@
 import os
 import requests
 
-def get_metadata(data_name, default):
+def get_metadata(url, default):
     if os.environ.get("SPOTMARK_ENVIRONMENT") != "AWS":
         return default
- 
+
     response = requests.get(url)
     if not response.status_code == 200:
         error = "Non-200 response for %s: %s" % (url, response.content)

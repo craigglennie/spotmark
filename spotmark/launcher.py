@@ -88,7 +88,8 @@ class ScriptedInstanceLauncher(object):
         """Terminate the given number of instances, or terminate by instance_ids
         if supplied"""
 
-        assert num_instances or instance_ids, "Must supply one of num_instances or instance_ids"
+        assert num_instances or instance_ids, "Must supply num_instances or instance_ids"
+        assert not(num_instances and instance_ids), "Must supply only one of num_instances or instance_ids"
 
         if instance_ids:
             instance_ids = set(instance_ids)
@@ -107,14 +108,23 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
     """Extends ScriptedInstanceLauncher to starting and stopping
     Spot instances"""
 
-    def __init__(self, user_data_script, region=None):
-        super(SpotInstanceLauncher, self).__init__(user_data_script, region=region)
-        self.spot_request_ids = []
+
+    def __init__(self, instance_type, security_group, key_name, ami=None, user_data=None, region_name='us-east-1', availability_zone=None):
+        super(SpotInstanceLauncher, self).__init__(instance_type, security_group, key_name,
+            ami=ami, user_data=user_data, region_name=region_name, availability_zone=availability_zone
+        )
+        self.spot_request_ids = set()
 
     @property
     def instance_ids(self):
         requests = self.get_spot_requests()
-        return [i.instance_id for i in requests if i.state == 'active']
+        return {i.instance_id for i in requests if i.state == 'active'}
+
+    @instance_ids.setter
+    def instance_ids(self, value):
+        # Allow updates so that superclass terminate works, but
+        # don't do anything
+        pass
 
     @property
     def bid_price(self):
@@ -124,7 +134,7 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
         return [(request.state, request.instance_id) for request in self.get_spot_requests()]
 
     def get_spot_requests(self):
-        return self.ec2.get_all_spot_instance_requests(request_ids=self.spot_request_ids)
+        return self.ec2.get_all_spot_instance_requests(request_ids=list(self.spot_request_ids))
 
     def launch(self, num_instances, **kwargs):
         requests = self.ec2.request_spot_instances(
@@ -136,16 +146,20 @@ class SpotInstanceLauncher(ScriptedInstanceLauncher):
             key_name=self.key_name,
             **kwargs
         )
-        self.spot_request_ids.extend([request.id for request in requests])
+        self.spot_request_ids.update(request.id for request in requests)
 
-    def stop(self, num_requests):
-        all_requests = self.get_spot_requests()
-        running_requests = [i for i in all_requests if i.instance_id]
-        to_cancel = running_requests[:num_requests]
-        self.ec2.cancel_spot_instance_requests([request.id for request in to_cancel])
+    def terminate(self, num_instances=None, instance_ids=None):
+        """Terminates num_instances or instance_ids and also cancels
+        the respective spot instance requests"""
 
-        instance_ids = [request.instance_id for request in to_cancel] 
-        if instance_ids:
-            self.ec2.terminate_instances(instance_ids)
+        assert num_instances or instance_ids, "Must supply num_instances or instance_ids"
+        assert not(num_instances and instance_ids), "Must supply only one of num_instances or instance_ids"
 
+        if num_instances:
+            instance_ids = list(self.instance_ids)[:num_instances]
+        super(SpotInstanceLauncher, self).terminate(instance_ids=instance_ids)
 
+        to_cancel = [i for i in self.get_spot_requests() if i.instance_id in instance_ids]
+        request_ids = {request.id for request in to_cancel}
+        self.ec2.cancel_spot_instance_requests(request_ids)
+        self.spot_request_ids = self.spot_request_ids - request_ids

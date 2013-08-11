@@ -18,10 +18,13 @@ aws_access_key_id = {{ spotmark.aws_access_key }}
 aws_secret_access_key = {{ spotmark.aws_secret_key }}" > ~/.boto
 
 # Setup the Spotmark repo
+SPOTMARK_ENVIRONMENT='AWS'
 git clone git://github.com/craigglennie/spotmark.git
 virtualenv spotmark
 cd spotmark
 source bin/activate
 pip install -r requirements.txt
+source bin/activate
+./spotmark/client &
 
 {% block user_code %}{% endblock %}
